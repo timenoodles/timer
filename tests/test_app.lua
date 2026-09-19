@@ -57,6 +57,21 @@ do
     a:renameInput("a") a:renameInput("b") a:renameInput("c")
     check("rename limite", a.renameBuffer == "ABC" and a:renameInput("d") == false)
 end
+do
+    -- Regressão: README documenta CAFÉ como nome válido (%w rejeitava É).
+    local a = App.new()
+    a:startRename(1, "")
+    check("rename aceita É", a:renameInput("É") and a.renameBuffer == "É")
+    a:cancelRename()
+    a:startRename(1, "")
+    for _, ch in ipairs({ "c", "a", "f", "é" }) do a:renameInput(ch) end
+    check("rename café→CAFÉ", a.renameBuffer == "CAFÉ")
+    a:renameBackspace()
+    check("rename backspace acento", a.renameBuffer == "CAF")
+    a:cancelRename()
+    a:startRename(1, "")
+    check("rename rejeita controle", (not a:renameInput("\7")) and a.renameBuffer == "")
+end
 
 if failures > 0 then print(failures .. " FALHA(S)") os.exit(1)
 else print("todos os testes passaram") end

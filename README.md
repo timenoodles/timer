@@ -106,3 +106,22 @@ web/index.html   -- love.js container template (title, favicon, loading/error)
 - **Colors**: edit `theme.lua` (`theme.colors`).
 - **Time presets**: edit `config.lua` (`config.presets = { 20, 10, 5 }`).
 - **Alarm sound**: edit `config.lua` (`config.sound`) or press `S` in-app.
+
+## Web/publicação
+
+- O site no ar (`https://timenoodles.github.io/timer`, branch `gh-pages`)
+  usa o harness **2dengine/love.js** (`player.js` + `index.html` +
+  `style.css` próprios). Fluxo: rebuild de `game.love` a partir do `main`
+  (`zip -9 -r timer-japones.love main.lua app.lua button.lua config.lua
+  layout.lua notification.lua store.lua strutil.lua theme.lua timer.lua
+  ui input assets`), copiar para `game.love` no `gh-pages`, commitar e
+  pushear.
+- Após regenerar o bundle, reaplicar em `style.css`: `object-fit: contain`
+  (não `fill`, que distorce em celular retrato) + fundo `#e6e6e0` — o
+  template padrão volta com `fill`.
+- `web/index.html` no `main` é um **rascunho alternativo** (harness
+  Davidobot/love.js, incompatível com o bundle atual) — não é publicado,
+  editar lá não muda o site. Guardado como referência p/ eventual migração.
+- Autosave no navegador depende do `love.wasm` persistir `love.filesystem`
+  em IndexedDB (IDBFS); se um F5 real resetar o estado, o problema é no
+  build wasm, não em `store.lua`.

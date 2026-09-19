@@ -98,10 +98,12 @@ for _, k in ipairs({ "down", "right", "left", "up", "return", "escape" }) do
     if not ok then print("  erro: " .. tostring(err)) end
 end
 
--- Rename via textinput
+-- Rename via textinput (inclui acento: regressão README CAFÉ)
 pcall(love.keypressed, "n")
 ok, err = pcall(love.textinput, "a")
 check("textinput rename", ok)
+ok, err = pcall(love.textinput, "É")
+check("textinput rename acento", ok)
 ok, err = pcall(love.keypressed, "return")
 check("rename confirm", ok)
 ok, err = pcall(love.draw)

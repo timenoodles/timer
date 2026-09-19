@@ -171,6 +171,7 @@ do
     check("label upper", t:setLabel("forno", 6) and t.label == "FORNO")
     check("label vazio rejeita", (not t:setLabel("   ", 6)) and t.label == "FORNO")
     check("label trunca", t:setLabel("extralongo", 6) and t.label == "EXTRAL")
+    check("label acento upper", t:setLabel("café", 6) and t.label == "CAFÉ")
 end
 
 -- addPreset em finished volta a idle; em running estende endTime

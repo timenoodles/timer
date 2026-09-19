@@ -1,15 +1,20 @@
 <!DOCTYPE html>
-<!-- Container web do Multi Timer (LÖVE via love.js).
-     Como publicar:
-       1. Gere timer-japones.love (zip do jogo, ver README).
-       2. Converta com love.js (https://github.com/Davidobot/love.js):
-          o bundle gera love.js + game data a partir do .love.
-       3. Coloque este index.html + o bundle no mesmo diretório
-          (ex: página /timer no site) e ajuste GAME_FILE abaixo.
-       4. Após regenerar o bundle, reaplique em style.css (branch gh-pages):
-          object-fit: contain (não fill) + fundo #e6e6e0 — o template
-          padrão do love.js volta com fill, que distorce em celular retrato.
-     O HTML é só container: a interface continua desenhada pelo LÖVE. -->
+<!-- RASCUNHO — container web ALTERNATIVO, NÃO publicado.
+     O site no ar (timenoodles.github.io/timer, branch gh-pages) usa outro
+     harness incompatível (2dengine/love.js: player.js + index.html +
+     style.css próprios, API Player.start). Este arquivo usa o harness
+     Davidobot/love.js (API love.run) e NÃO tem ligação com o publicado:
+     editar aqui não muda nada no site. Mantido como referência porque o
+     botão "Iniciar" dele resolve o desbloqueio de áudio por gesto do
+     usuário — motivo para uma eventual migração futura (que exigiria
+     gerar o bundle certo e trocar o gh-pages inteiro, não só este file).
+     Fluxo real de publicação: ver README ("Web/publicação").
+     (Notas antigas de conversão Davidobot mantidas abaixo p/ referência.) -->
+<!-- Conversão Davidobot/love.js (https://github.com/Davidobot/love.js):
+        1. Gere timer-japones.love (zip do jogo, ver README).
+        2. Converta com love.js: o bundle gera love.js + game data.
+        3. Coloque este index.html + o bundle no mesmo diretório
+           e ajuste GAME_FILE abaixo. -->
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">

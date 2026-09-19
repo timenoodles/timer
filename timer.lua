@@ -2,6 +2,8 @@
 -- Logica pura de um timer de contagem regressiva.
 -- Nao sabe desenhar nada: so controla estado e tempo.
 
+local StrUtil = require("strutil")
+
 local Timer = {}
 Timer.__index = Timer
 
@@ -51,7 +53,7 @@ end
 -- Nome curto (máx. maxLen, maiúsculas, sem espaços extras).
 function Timer:setLabel(name, maxLen)
     maxLen = maxLen or 6
-    local s = tostring(name or ""):upper():gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
+    local s = StrUtil.upperLabel(name):gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
     if #s == 0 then return false end
     if #s > maxLen then s = s:sub(1, maxLen) end
     self.label = s

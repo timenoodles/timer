@@ -3,10 +3,15 @@
 -- input/controls.lua decide "qual ação aconteceu"; App decide "o que fazer".
 -- Sem desenho, sem love direto (testável fora do LÖVE).
 
+local StrUtil = require("strutil")
+
 local App = {}
 App.__index = App
 
 App.SOUND_MODES = { "off", "beep", "repeat3", "repeat" }
+
+-- Reexportado p/ compatibilidade (main.lua/testes usam App.upperLabel).
+App.upperLabel = StrUtil.upperLabel
 
 function App.new(opts)
     opts = opts or {}
@@ -67,15 +72,16 @@ function App:cancelRename()
 end
 
 function App:renameBackspace()
-    self.renameBuffer = self.renameBuffer:sub(1, -2)
+    self.renameBuffer = StrUtil.stripLastChar(self.renameBuffer)
 end
 
 function App:renameInput(text)
-    if #self.renameBuffer < self.maxLabelLen and text:match("[%w ]") then
-        self.renameBuffer = (self.renameBuffer .. text):upper()
-        return true
-    end
-    return false
+    -- Aceita qualquer caractere imprimível (inclui acentos que %w rejeita);
+    -- só bloqueia vazio e caracteres de controle.
+    if text == "" or text:match("%c") then return false end
+    if #self.renameBuffer >= self.maxLabelLen then return false end
+    self.renameBuffer = StrUtil.upperLabel(self.renameBuffer .. text)
+    return true
 end
 
 function App:isRenaming()
