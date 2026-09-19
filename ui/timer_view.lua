@@ -32,10 +32,11 @@ function TimerView.new(timer, onEditRequest, presets)
     self.clearBtn = Button.new(0, 0, 10, 10, "", "gray", function() t:clear() end)
     self.clearBtn.icon = "reset" -- arco vetorial desenhado por cima; label vazio (sem texto morto)
     self.clearBtn.accessibleLabel = "CLR" -- texto alternativo p/ acessibilidade/log
-    self.renameBtn = Button.new(0, 0, 10, 10, "✎", "gray", function()
+    self.renameBtn = Button.new(0, 0, 10, 10, "", "gray", function()
         if onEditRequest and onEditRequest("rename") then return end
         if self.onRenameRequest then self.onRenameRequest() end
     end)
+    self.renameBtn.icon = "pencil"
     self.renameBtn.accessibleLabel = "RENAME"
     return self
 end
@@ -183,16 +184,18 @@ function TimerView:draw(cell, theme, layout, mode, focused)
     end
 
     local sc = stateColors[t.state] or {0.6, 0.6, 0.6}
-    -- Cabeçalho: rótulo + triângulo de foco + pílula FOCUS + indicador de estado.
+    -- Cabeçalho: rótulo + triângulo vetorial de foco + indicador de estado.
+    -- Um único indicador de foco (triângulo); sem prefixo Unicode no texto.
     love.graphics.setFont(theme.fonts.uiSmall)
     local headerColor = theme.colors.lcdLabel or theme.colors.label
     love.graphics.setColor(headerColor[1], headerColor[2], headerColor[3], dimmed and 0.55 or 1)
-    local labelText = (focused and "▶ " or "") .. (t.label or "")
+    local labelText = t.label or ""
     love.graphics.printf(labelText, lcdX + 8, lcdY + 9, 120, "left")
-    local labelW = theme.fonts.uiSmall:getWidth(t.label or "") + 16
+    local labelW = theme.fonts.uiSmall:getWidth(labelText) + 14
     if focused then
         love.graphics.setColor(theme.colors.lcdLabel or theme.colors.label)
-        love.graphics.polygon("fill", lcdX + 8 + labelW, lcdY + 9, lcdX + 8 + labelW, lcdY + 21, lcdX + 17 + labelW, lcdY + 15)
+        local tx = lcdX + 8 + labelW
+        love.graphics.polygon("fill", tx, lcdY + 10, tx, lcdY + 20, tx + 9, lcdY + 15)
     end
     local sx, sy = lcdX + lcdW - 16, lcdY + 16
     if t.state == "running" then

@@ -114,6 +114,38 @@ function Button:draw()
         love.graphics.arc("line", "open", cx, cy, r, -0.6, math.pi * 1.5)
         local ax, ay = cx + r * math.cos(math.pi * 1.5), cy + r * math.sin(math.pi * 1.5)
         love.graphics.polygon("fill", ax - 5, ay - 1, ax + 3, ay - 5, ax + 3, ay + 4)
+    elseif self.icon == "expand" then
+        -- Tela cheia: 4 cantos (suporta qualquer fonte, sem Unicode).
+        local x0, y0 = self.x + self.w / 2, self.y + yOff + self.h / 2
+        local d, l = 5.5, 4.5 -- meio-tamanho e comprimento da perna
+        love.graphics.setLineWidth(2)
+        for _, sx in ipairs({ -1, 1 }) do
+            for _, sy in ipairs({ -1, 1 }) do
+                local cx, cy = x0 + sx * d, y0 + sy * d
+                love.graphics.line(cx, cy, cx - sx * l, cy)
+                love.graphics.line(cx, cy, cx, cy - sy * l)
+            end
+        end
+    elseif self.icon == "gear" then
+        -- Engrenagem simplificada: anel + 6 dentes.
+        local cx, cy = self.x + self.w / 2, self.y + yOff + self.h / 2
+        local r = math.min(self.w, self.h) * 0.20
+        love.graphics.setLineWidth(2)
+        love.graphics.circle("line", cx, cy, r)
+        for i = 0, 5 do
+            local a = i * math.pi / 3
+            local c, s = math.cos(a), math.sin(a)
+            love.graphics.line(cx + c * (r + 1), cy + s * (r + 1),
+                cx + c * (r + 4), cy + s * (r + 4))
+        end
+    elseif self.icon == "pencil" then
+        -- Lápis: corpo diagonal + ponta.
+        local cx, cy = self.x + self.w / 2, self.y + yOff + self.h / 2
+        love.graphics.setLineWidth(2)
+        love.graphics.line(cx - 4, cy + 4, cx + 3, cy - 3)
+        love.graphics.line(cx - 4, cy + 4, cx - 5.5, cy + 1.5)
+        love.graphics.line(cx - 4, cy + 4, cx - 1.5, cy + 5.5)
+        love.graphics.circle("fill", cx + 4.5, cy - 4.5, 1.4)
     else
         local _, lineCount = string.gsub(self.label, "\n", "\n")
         lineCount = lineCount + 1

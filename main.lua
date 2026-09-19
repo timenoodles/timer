@@ -226,13 +226,15 @@ function love.load()
         modeButtons[i] = Button.new(0, 0, 26, 26, tostring(i), "gray", function() setMode(idx) end)
         modeButtons[i].font = theme.fonts.uiSmall
     end
-    fullscreenBtn = Button.new(0, 0, 26, 26, "⛶", "gray", toggleFullscreen)
+    fullscreenBtn = Button.new(0, 0, 26, 26, "", "gray", toggleFullscreen)
+    fullscreenBtn.icon = "expand"
     fullscreenBtn.font = theme.fonts.uiSmall
     fullscreenBtn.accessibleLabel = "FULLSCREEN"
-    settingsBtn = Button.new(0, 0, 26, 26, "⚙", "gray", function()
+    settingsBtn = Button.new(0, 0, 26, 26, "", "gray", function()
         settings:show()
         refreshAllButtons()
     end)
+    settingsBtn.icon = "gear"
     settingsBtn.font = theme.fonts.uiSmall
     settingsBtn.accessibleLabel = "SETTINGS"
 
@@ -335,11 +337,6 @@ end
 
 function love.draw()
     drawModeButtons()
-    -- Indicador discreto de som ao lado do botão fullscreen.
-    love.graphics.setFont(theme.fonts.uiSmall)
-    love.graphics.setColor(theme.colors.label)
-    local snd = "SOM:" .. string.upper(notif.mode)
-    love.graphics.printf(snd, 8, 14, 140, "left")
     local cells = layout.cellsFor(mode, screenW, screenH)
     for i = 1, mode do
         local focused = (i == focusIndex) and not editingTimer
