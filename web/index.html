@@ -6,11 +6,18 @@
           o bundle gera love.js + game data a partir do .love.
        3. Coloque este index.html + o bundle no mesmo diretório
           (ex: página /timer no site) e ajuste GAME_FILE abaixo.
+       4. Após regenerar o bundle, reaplique em style.css (branch gh-pages):
+          object-fit: contain (não fill) + fundo #e6e6e0 — o template
+          padrão do love.js volta com fill, que distorce em celular retrato.
      O HTML é só container: a interface continua desenhada pelo LÖVE. -->
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="description" content="Timer de contagem regressiva estilo japonês, com 1 a 3 timers simultâneos.">
+<meta property="og:title" content="Multi Timer — Japanese Style">
+<meta property="og:description" content="Timer de contagem regressiva estilo japonês, com 1 a 3 timers simultâneos.">
+<meta property="og:type" content="website">
 <title>Multi Timer — Japanese Style</title>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='6' width='28' height='20' rx='4' fill='%234d614d'/%3E%3Ctext x='16' y='21' font-family='monospace' font-size='11' fill='%23eef2e8' text-anchor='middle'%3E88%3C/text%3E%3C/svg%3E">
 <style>
@@ -32,7 +39,8 @@
 </head>
 <body>
 <div id="wrap">
-  <canvas id="canvas" width="900" height="700"></canvas>
+  <canvas id="canvas" width="900" height="700" role="img" aria-label="Multi Timer estilo japonês: até 3 timers de contagem regressiva"></canvas>
+  <noscript><div style="text-align:center;font-family:system-ui,sans-serif;padding:16px">Este timer precisa de JavaScript habilitado para funcionar.</div></noscript>
   <div id="overlay">
     <div id="status">Carregando timer…</div>
     <button id="start" hidden>Iniciar</button>

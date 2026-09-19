@@ -179,7 +179,9 @@ end
 
 function love.load()
     love.window.setTitle("Multi Timer - Japanese Style")
-    love.window.setMode(screenW, screenH, { resizable = true, minwidth = 640, minheight = 480 })
+    love.window.setMode(screenW, screenH, { resizable = true,
+        minwidth = (love.system and love.system.getOS() == "Web") and 320 or 640,
+        minheight = (love.system and love.system.getOS() == "Web") and 240 or 480 })
     love.graphics.setBackgroundColor(theme.colors.bg)
 
     theme.load()
