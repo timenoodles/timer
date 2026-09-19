@@ -1,5 +1,7 @@
 # Multi Timer — Japanese Style (LÖVE2D / Lua)
 
+▶ **Try it in your browser: https://timenoodles.github.io/timer**
+
 A countdown timer inspired by Japanese kitchen timers
 (LCD display, round buttons, minimalist design). Shows **1, 2, or 3
 independent timers** on screen, each running on its own.
