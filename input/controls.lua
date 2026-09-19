@@ -56,6 +56,14 @@ function Controls.keypressed(key, ctx)
         ctx.onClear()
     elseif key == "t" then
         ctx.onEdit(ctx.focusIndex)
+    elseif key == "n" then
+        if ctx.onRename then ctx.onRename(ctx.focusIndex) end
+    elseif key == "s" then
+        if ctx.onCycleSound then ctx.onCycleSound() end
+    elseif key == "y" then
+        if ctx.onClearSaved then ctx.onClearSaved() end
+    elseif key == "f11" then
+        if ctx.onFullscreen then ctx.onFullscreen() end
     elseif key == "1" or key == "2" or key == "3" then
         ctx.onMode(tonumber(key))
     end

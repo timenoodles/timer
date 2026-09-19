@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<!-- Container web do Multi Timer (LÖVE via love.js).
+     Como publicar:
+       1. Gere timer-japones.love (zip do jogo, ver README).
+       2. Converta com love.js (https://github.com/Davidobot/love.js):
+          o bundle gera love.js + game data a partir do .love.
+       3. Coloque este index.html + o bundle no mesmo diretório
+          (ex: página /timer no site) e ajuste GAME_FILE abaixo.
+     O HTML é só container: a interface continua desenhada pelo LÖVE. -->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Multi Timer — Japanese Style</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect x='2' y='6' width='28' height='20' rx='4' fill='%234d614d'/%3E%3Ctext x='16' y='21' font-family='monospace' font-size='11' fill='%23eef2e8' text-anchor='middle'%3E88%3C/text%3E%3C/svg%3E">
+<style>
+  html, body { margin: 0; padding: 0; height: 100%; background: #e6e6e1; }
+  body { display: flex; align-items: center; justify-content: center;
+         font-family: system-ui, sans-serif; }
+  #wrap { position: relative; width: min(96vw, 900px); }
+  canvas { width: 100%; display: block; border-radius: 12px;
+           background: #4d614d; }
+  #overlay { position: absolute; inset: 0; display: flex; flex-direction: column;
+             align-items: center; justify-content: center; gap: 12px;
+             color: #595b54; text-align: center; padding: 24px; }
+  #overlay[hidden] { display: none; }
+  #start { font-size: 18px; padding: 12px 28px; border: 0; border-radius: 10px;
+           background: #8cc68c; cursor: pointer; }
+  #start:active { transform: translateY(2px); }
+  #err { color: #b3261e; max-width: 60ch; }
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="canvas" width="900" height="700"></canvas>
+  <div id="overlay">
+    <div id="status">Carregando timer…</div>
+    <button id="start" hidden>Iniciar</button>
+    <div id="err"></div>
+  </div>
+</div>
+<script>
+  // Ajuste conforme o bundle love.js gerado.
+  var GAME_FILE = "timer-japones.love";
+  var overlay = document.getElementById("overlay");
+  var statusEl = document.getElementById("status");
+  var startBtn = document.getElementById("start");
+  var errEl = document.getElementById("err");
+
+  function fail(msg) {
+    statusEl.textContent = "Não foi possível carregar o timer.";
+    errEl.textContent = msg;
+    startBtn.hidden = true;
+  }
+
+  // love.js expõe `love` global após carregar love.js; o jogo inicia no
+  // primeiro gesto do usuário (necessário p/ desbloquear áudio no navegador).
+  function boot() {
+    if (typeof love === "undefined") {
+      fail("love.js não encontrado. Gere o bundle web a partir do .love.");
+      return;
+    }
+    statusEl.textContent = "Pronto.";
+    startBtn.hidden = false;
+    startBtn.addEventListener("click", function () {
+      overlay.hidden = true;
+      try { love.run(GAME_FILE, "#canvas"); }
+      catch (e) { overlay.hidden = false; fail(String(e)); }
+    }, { once: true });
+  }
+
+  window.addEventListener("load", boot);
+  // Some com o overlay automaticamente se o jogo já estiver rodando
+  // (alguns bundles iniciam sozinhos).
+  setTimeout(function () {
+    if (window.__timerRunning) overlay.hidden = true;
+  }, 5000);
+</script>
+</body>
+</html>

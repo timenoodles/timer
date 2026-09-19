@@ -9,10 +9,22 @@ local MAX_SECONDS = 99 * 3600 + 59 * 60 + 59 -- 99:59:59
 
 -- Fonte de tempo monotônica; funciona dentro do LÖVE e em testes fora dele.
 local function now()
+    if Timer.nowFn then return Timer.nowFn() end
     if love and love.timer and love.timer.getTime then
         return love.timer.getTime()
     end
     return os.clock()
+end
+
+-- Fonte de tempo injetável (testes determinísticos).
+-- Produção: padrão (love.timer.getTime ou os.clock).
+-- Testes: Timer.setClock(function() return fakeTime end)
+function Timer.setClock(fn)
+    Timer.nowFn = fn
+end
+
+function Timer.resetClock()
+    Timer.nowFn = nil
 end
 
 function Timer.new(id, label)
@@ -34,6 +46,16 @@ end
 -- Registra callback de término: t:onFinished(function(timer) ... end)
 function Timer:setOnFinished(cb)
     self.onFinished = cb
+end
+
+-- Nome curto (máx. maxLen, maiúsculas, sem espaços extras).
+function Timer:setLabel(name, maxLen)
+    maxLen = maxLen or 6
+    local s = tostring(name or ""):upper():gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
+    if #s == 0 then return false end
+    if #s > maxLen then s = s:sub(1, maxLen) end
+    self.label = s
+    return true
 end
 
 function Timer:addPreset(minutes)
@@ -79,6 +101,11 @@ function Timer:toggleStartStop()
     else
         self:start()
     end
+end
+
+-- Permite ao store/app restaurar endTime absoluto (reload) e a testes injetar relógio.
+function Timer:setEndTime(t)
+    self.endTime = t
 end
 
 function Timer:clear()

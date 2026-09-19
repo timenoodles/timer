@@ -73,6 +73,13 @@ end
 
 function Button:draw()
     if not self.visible then return end
+    -- Hover (mouse) dá feedback imediato sem depender de toque; toque usa pressed.
+    local hovered = false
+    if love and love.mouse and love.mouse.getPosition and self.enabled then
+        local mx, my = love.mouse.getPosition()
+        hovered = mx >= self.x and mx <= self.x + self.w
+            and my >= self.y and my <= self.y + self.h
+    end
     local col = colorsFor(self.style, self.pressed, self.enabled)
     local radius = math.min(self.h, self.w) * 0.28
 
@@ -85,6 +92,13 @@ function Button:draw()
     love.graphics.setColor(col)
     local yOff = self.pressed and 2 or 0
     love.graphics.rectangle("fill", self.x, self.y + yOff, self.w, self.h, radius, radius)
+
+    -- Realce de hover: borda clara imediata (só quando não pressionado).
+    if hovered and not self.pressed then
+        love.graphics.setColor(1, 1, 1, 0.35)
+        love.graphics.setLineWidth(2)
+        love.graphics.rectangle("line", self.x, self.y + yOff, self.w, self.h, radius, radius)
+    end
 
     love.graphics.setColor(0, 0, 0, 0.15)
     love.graphics.setLineWidth(1.5)

@@ -130,6 +130,66 @@ do
     check("progresso metade", math.abs(p - 0.5) < 1e-9)
 end
 
+-- limite máximo 99:59:59
+do
+    local t = Timer.new(1)
+    t:addPreset(100 * 60)
+    check("limite máximo", t.remaining == Timer.MAX_SECONDS)
+    check("limite display", t:getDisplayText() == "99:59:59")
+end
+
+-- 00:00 confirma zerado sem travar
+do
+    local t = Timer.new(1)
+    t:beginEditing()
+    t:confirmEditing()
+    check("00:00 zerado", t.remaining == 0 and t:getDisplayText() == "00:00")
+    check("00:00 idle", t.state == "idle")
+    t:start()
+    check("00:00 não inicia", t.state == "idle")
+end
+
+-- relógio injetável: countdown determinístico sem esperar
+do
+    local fake = 5000
+    Timer.setClock(function() return fake end)
+    local t = Timer.new(1)
+    t:addPreset(5) -- 300s, endTime = 5300
+    t:start()
+    fake = 5150
+    t:update(0)
+    check("clock inj remanescente", math.abs(t.remaining - 150) < 1e-6)
+    fake = 5300
+    t:update(0)
+    check("clock inj termina", t.state == "finished")
+    Timer.resetClock()
+end
+
+-- setLabel: maiúsculas, trim, limite
+do
+    local t = Timer.new(1, "T1")
+    check("label upper", t:setLabel("forno", 6) and t.label == "FORNO")
+    check("label vazio rejeita", (not t:setLabel("   ", 6)) and t.label == "FORNO")
+    check("label trunca", t:setLabel("extralongo", 6) and t.label == "EXTRAL")
+end
+
+-- addPreset em finished volta a idle; em running estende endTime
+do
+    local fake = 9000
+    Timer.setClock(function() return fake end)
+    local t = Timer.new(1)
+    t:addPreset(1) t:start()
+    fake = 9061 t:update(0)
+    check("terminou", t.state == "finished")
+    t:addPreset(1)
+    check("preset pós-fim volta idle", t.state == "idle" and t.remaining == 60)
+    t:start()
+    fake = 9070
+    t:addPreset(1)
+    check("preset em running estende", math.abs(t.remaining - 111) < 1e-6)
+    Timer.resetClock()
+end
+
 if failures > 0 then
     print(failures .. " FALHA(S)")
     os.exit(1)

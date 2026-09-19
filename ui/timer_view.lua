@@ -8,17 +8,23 @@ local TimerView = {}
 TimerView.__index = TimerView
 
 local function rowHeightFor(cellH)
-    return math.max(36, math.min(56, cellH * 0.18))
+    return math.max(44, math.min(56, cellH * 0.18))
 end
 
-function TimerView.new(timer, onEditRequest)
+function TimerView.new(timer, onEditRequest, presets)
     local self = setmetatable({}, TimerView)
     self.timer = timer
     self.onEditRequest = onEditRequest
     local t = timer
-    self.preset20 = Button.new(0, 0, 10, 10, "20m", "yellow", function() t:addPreset(20) end)
-    self.preset10 = Button.new(0, 0, 10, 10, "10m", "yellow", function() t:addPreset(10) end)
-    self.preset5  = Button.new(0, 0, 10, 10, "5m",  "yellow", function() t:addPreset(5) end)
+    self.presetBtns = {}
+    self.presetVals = {}
+    for _, minutes in ipairs(presets or { 20, 10, 5 }) do
+        local m = minutes
+        local btn = Button.new(0, 0, 10, 10, tostring(m) .. "m", "yellow",
+            function() t:addPreset(m) end)
+        table.insert(self.presetBtns, btn)
+        table.insert(self.presetVals, m)
+    end
     self.setBtn   = Button.new(0, 0, 10, 10, "SET", "blue", function()
         if onEditRequest then onEditRequest() end
     end)
@@ -26,7 +32,26 @@ function TimerView.new(timer, onEditRequest)
     self.clearBtn = Button.new(0, 0, 10, 10, "", "gray", function() t:clear() end)
     self.clearBtn.icon = "reset" -- arco vetorial desenhado por cima; label vazio (sem texto morto)
     self.clearBtn.accessibleLabel = "CLR" -- texto alternativo p/ acessibilidade/log
+    self.renameBtn = Button.new(0, 0, 10, 10, "✎", "gray", function()
+        if onEditRequest and onEditRequest("rename") then return end
+        if self.onRenameRequest then self.onRenameRequest() end
+    end)
+    self.renameBtn.accessibleLabel = "RENAME"
     return self
+end
+
+-- Define presets em tempo de execução (botões amarelos refeitos na mesma ordem).
+function TimerView:setPresets(presets)
+    local t = self.timer
+    self.presetBtns = {}
+    self.presetVals = {}
+    for _, minutes in ipairs(presets or {}) do
+        local m = minutes
+        table.insert(self.presetBtns,
+            Button.new(0, 0, 10, 10, tostring(m) .. "m", "yellow",
+                function() t:addPreset(m) end))
+        table.insert(self.presetVals, m)
+    end
 end
 
 function TimerView:updateLayout(cell)
@@ -39,18 +64,34 @@ function TimerView:updateLayout(cell)
     local gap = 8
     local resetW = math.min(46, rowW * 0.08)
     local availW = rowW - resetW - gap
-    local weights = { 1, 1, 1, 1, 1.6 } -- 20m, 10m, 5m, SET, START/PAUSE
+    -- Pesos: presets peso 1, SET peso 1, START peso 1.6.
+    local weights = {}
+    for _ in ipairs(self.presetBtns) do table.insert(weights, 1) end
+    table.insert(weights, 1)   -- SET
+    table.insert(weights, 1.6) -- START/PAUSE
     local totalW = 0
     for _, w in ipairs(weights) do totalW = totalW + w end
     local unit = (availW - gap * (#weights - 1)) / totalW
     local x = rowX
-    local btns = { self.preset20, self.preset10, self.preset5, self.setBtn, self.startStopBtn }
+    local btns = {}
+    for _, b in ipairs(self.presetBtns) do table.insert(btns, b) end
+    table.insert(btns, self.setBtn)
+    table.insert(btns, self.startStopBtn)
     for i, btn in ipairs(btns) do
         local w = unit * weights[i]
         btn:setRect(x, rowY, w, rowH)
         x = x + w + gap
     end
     self.clearBtn:setRect(x, rowY + (rowH - math.min(rowH, 34)) / 2, resetW, math.min(rowH, 34))
+end
+
+function TimerView:updateHeaderButton(cell)
+    -- Botão ✎ discreto no canto do LCD (renomear), 28x22.
+    if not self.renameBtn then return end
+    local lcdX = cell.x + 10
+    local lcdY = cell.y + 10
+    local lcdW = cell.w - 20
+    self.renameBtn:setRect(lcdX + lcdW - 36, lcdY + 4, 28, 22)
 end
 
 function TimerView:refresh()
@@ -69,12 +110,11 @@ function TimerView:refresh()
 end
 
 function TimerView:collectButtons(list)
-    table.insert(list, self.preset20)
-    table.insert(list, self.preset10)
-    table.insert(list, self.preset5)
+    for _, b in ipairs(self.presetBtns) do table.insert(list, b) end
     table.insert(list, self.setBtn)
     table.insert(list, self.startStopBtn)
     table.insert(list, self.clearBtn)
+    if self.renameBtn then table.insert(list, self.renameBtn) end
 end
 
 -- Paleta enxuta: neutro cinza, ação azul, confirmar verde, perigo vermelho.
@@ -88,12 +128,23 @@ local stateColors = {
 
 function TimerView:draw(cell, theme, layout, mode, focused)
     local t = self.timer
+    -- Timer não-focado em modo multi fica visualmente secundário.
+    local dimmed = (mode > 1) and not focused
     love.graphics.setColor(theme.colors.caseBg)
     love.graphics.rectangle("fill", cell.x, cell.y, cell.w, cell.h, 14, 14)
-    -- Foco estrutural: borda neutra mais espessa (sem azul de "formulário").
-    love.graphics.setColor(focused and theme.colors.label or theme.colors.caseBorder)
-    love.graphics.setLineWidth(focused and 4 or 1.5)
-    love.graphics.rectangle("line", cell.x, cell.y, cell.w, cell.h, 14, 14)
+    -- Foco estrutural: borda neutra mais espessa + anel externo sutil.
+    if focused then
+        love.graphics.setColor(theme.colors.label)
+        love.graphics.setLineWidth(4)
+        love.graphics.rectangle("line", cell.x, cell.y, cell.w, cell.h, 14, 14)
+        love.graphics.setColor(theme.colors.label[1], theme.colors.label[2], theme.colors.label[3], 0.25)
+        love.graphics.setLineWidth(7)
+        love.graphics.rectangle("line", cell.x - 2, cell.y - 2, cell.w + 4, cell.h + 4, 16, 16)
+    else
+        love.graphics.setColor(theme.colors.caseBorder)
+        love.graphics.setLineWidth(1.5)
+        love.graphics.rectangle("line", cell.x, cell.y, cell.w, cell.h, 14, 14)
+    end
 
     local rowH = rowHeightFor(cell.h)
     local lcdX = cell.x + 10
@@ -103,7 +154,14 @@ function TimerView:draw(cell, theme, layout, mode, focused)
     local barH, barGap = 5, 5
     local lcdH = cell.h - rowH - 18 - barH - barGap
 
-    local lcdBg = focused and theme.colors.lcdBgFocus or theme.colors.lcdBg
+    local lcdBg
+    if focused then
+        lcdBg = theme.colors.lcdBgFocus
+    elseif dimmed then
+        lcdBg = theme.colors.lcdBgDim or theme.colors.lcdBg
+    else
+        lcdBg = theme.colors.lcdBg
+    end
     love.graphics.setColor(lcdBg)
     love.graphics.rectangle("fill", lcdX, lcdY, lcdW, lcdH, 8, 8)
 
@@ -125,10 +183,12 @@ function TimerView:draw(cell, theme, layout, mode, focused)
     end
 
     local sc = stateColors[t.state] or {0.6, 0.6, 0.6}
-    -- Cabeçalho minimalista: rótulo T1 discreto + triângulo de foco + indicador de estado por forma+cor.
+    -- Cabeçalho: rótulo + triângulo de foco + pílula FOCUS + indicador de estado.
     love.graphics.setFont(theme.fonts.uiSmall)
-    love.graphics.setColor(theme.colors.lcdLabel or theme.colors.label)
-    love.graphics.printf(t.label or "", lcdX + 8, lcdY + 9, 60, "left")
+    local headerColor = theme.colors.lcdLabel or theme.colors.label
+    love.graphics.setColor(headerColor[1], headerColor[2], headerColor[3], dimmed and 0.55 or 1)
+    local labelText = (focused and "▶ " or "") .. (t.label or "")
+    love.graphics.printf(labelText, lcdX + 8, lcdY + 9, 120, "left")
     local labelW = theme.fonts.uiSmall:getWidth(t.label or "") + 16
     if focused then
         love.graphics.setColor(theme.colors.lcdLabel or theme.colors.label)
@@ -174,12 +234,11 @@ function TimerView:draw(cell, theme, layout, mode, focused)
 
     love.graphics.setColor(1, 1, 1, 1)
 
-    self.preset20:draw()
-    self.preset10:draw()
-    self.preset5:draw()
+    for _, b in ipairs(self.presetBtns) do b:draw() end
     self.setBtn:draw()
     self.startStopBtn:draw()
     self.clearBtn:draw()
+    if self.renameBtn and focused then self.renameBtn:draw() end
 end
 
 return TimerView
