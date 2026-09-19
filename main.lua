@@ -353,7 +353,7 @@ function love.draw()
         love.graphics.rectangle("fill", bx, by, bw, bh, 8, 8)
         love.graphics.setColor(theme.colors.label)
         love.graphics.setFont(theme.fonts.uiMed)
-        love.graphics.printf("NOME (Enter ok, Esc cancela)", bx, by + 6, bw, "center")
+        love.graphics.printf("NAME (Enter confirms, Esc cancels)", bx, by + 6, bw, "center")
         love.graphics.setFont(theme.fonts.uiLarge)
         love.graphics.printf(renameBuffer .. "_", bx, by + 28, bw, "center")
     end

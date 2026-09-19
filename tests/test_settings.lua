@@ -50,6 +50,9 @@ s:keypressed("return", false)
 check("enter limpa save", cleared == true)
 s:keypressed("escape", false)
 check("esc fecha", not s:isOpen())
+s:show()
+s.actionBtn.onClick()
+check("botao CLOSE fecha", not s:isOpen())
 
 if failures > 0 then print(failures .. " FALHA(S)") os.exit(1)
 else print("todos os testes passaram") end

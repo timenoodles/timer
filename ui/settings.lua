@@ -1,8 +1,8 @@
 -- ui/settings.lua
--- Modal de configurações: poucas opções, proporcional ao app.
--- SOM (off/beep/repeat3/repeat), TEMA (classic/dark/contrast),
--- AUTOSAVE (on/off), PRESETS (3 valores editáveis), LIMPAR SAVE, FECHAR.
--- Teclado: up/down seleciona, left/right altera, enter ativa, esc fecha.
+-- Settings modal: few options, proportional to the app.
+-- SOUND (off/beep/repeat3/repeat), THEME (classic/dark/contrast),
+-- AUTOSAVE (on/off), PRESETS (3 editable values), CLEAR SAVE, CLOSE.
+-- Keyboard: up/down selects, left/right changes, enter activates, esc closes.
 
 local Button = require("button")
 
@@ -26,7 +26,7 @@ function Settings.new(callbacks)
     self.sel = 1 -- 1..7 linhas
     self.leftBtn = Button.new(0, 0, 40, 34, "<", "gray", function() self:adjust(-1) end)
     self.rightBtn = Button.new(0, 0, 40, 34, ">", "gray", function() self:adjust(1) end)
-    self.actionBtn = Button.new(0, 0, 120, 34, "OK", "green", function() self:activate() end)
+    self.actionBtn = Button.new(0, 0, 120, 34, "OK", "green", function() self:close() end)
     self.closeBtn = Button.new(0, 0, 40, 30, "X", "gray", function() self:close() end)
     -- Botões -/+ por preset (3 presets).
     self.presetMinus, self.presetPlus = {}, {}
@@ -143,11 +143,11 @@ function Settings:draw(theme)
     love.graphics.rectangle("line", self.x, self.y, self.w, self.h, 16, 16)
     love.graphics.setFont(theme.fonts.uiLarge)
     love.graphics.setColor(theme.colors.label)
-    love.graphics.printf("CONFIG", self.x, self.y + 12, self.w, "center")
+    love.graphics.printf("SETTINGS", self.x, self.y + 12, self.w, "center")
 
     local rows = {
-        "SOM  < " .. st.sound .. " >",
-        "TEMA  < " .. st.theme .. " >",
+        "SOUND  < " .. st.sound .. " >",
+        "THEME  < " .. st.theme .. " >",
         "AUTOSAVE  < " .. (st.autosave and "ON" or "OFF") .. " >",
     }
     for i = 1, 3 do
@@ -181,11 +181,11 @@ function Settings:draw(theme)
     end
     love.graphics.setFont(theme.fonts.uiSmall)
     love.graphics.setColor(theme.colors.label)
-    love.graphics.printf("[7] LIMPAR SAVE  (Enter ativa)", self.x, self.y + self.h - 88, self.w, "center")
+    love.graphics.printf("[7] CLEAR SAVE  (Enter selects)", self.x, self.y + self.h - 88, self.w, "center")
 
     self.leftBtn:draw()
     self.rightBtn:draw()
-    self.actionBtn.label = "FECHAR"
+    self.actionBtn.label = "CLOSE"
     self.actionBtn:draw()
     self.closeBtn:draw()
     for i = 1, 3 do
