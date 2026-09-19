@@ -4,7 +4,46 @@ Todas as mudanças notáveis do projeto serão documentadas aqui.
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
-### Fixed - 2026-09-19
+
+## [1.0.4] - 2026-09-19
+### Fixed
+- `store.lua`: `Store.apply` limita o restante ao último valor salvo
+  (`min(left, saved.remaining, saved.duration`) — no navegador a base de
+  `love.timer.getTime()` pode recomeçar do zero a cada carregamento e o
+  timer "ganhava" segundos após F5.
+- Rename aceita acentos: novo `strutil.lua` (`upperLabel` com tabela manual
+  à–ý + `stripLastChar` UTF-8), usado por `app.lua:renameInput` e
+  `timer.lua:setLabel`; exemplo do README (`CAFÉ`) agora funciona de fato.
+### Added
+- Testes de regressão: acentos em `test_app.lua`, `test_timer.lua` e
+  `smoke_love.lua`; teto pós-reload em `test_store.lua`.
+- `web/og-image.png` (1200×630) + `og:image` (preview ao compartilhar o link).
+### Changed
+- README: seção `Web/publicação` (fluxo real via `gh-pages`, nota IDBFS);
+  limitação documentada (título da aba só pisca com a aba visível —
+  throttling do navegador); `web/index.html` marcado como rascunho
+  alternativo não-publicado (harness Davidobot, incompatível com o bundle
+  atual que usa 2dengine/love.js).
+
+## [1.0.3] - 2026-09-19
+### Fixed
+- Web: `gh-pages/style.css` com `object-fit: contain` (não distorce em
+  celular retrato) + fundo `#e6e6e0`; `main.lua` com `minwidth/minheight`
+  menor na Web (320×240) para o layout empilhado ativar de verdade.
+### Added
+- SEO/acessibilidade da página: `meta description`, tags OG, `role="img"` +
+  `aria-label` no canvas, `<noscript>` (em `web/index.html` e no `gh-pages`).
+
+## [1.0.2] - 2026-09-19
+### Fixed
+- Settings: botão CLOSE; menu em inglês.
+
+## [1.0.1] - 2026-09-19
+### Changed
+- Ícones vetoriais, foco único, removido SOM do top-bar.
+
+## [1.0.0] - 2026-09-19
+### Fixed - refatoração Fases 1–4 (ver `docs/plan.md`, itens #1–#19)
 - `timer.lua`: contagem por tempo real (`endTime = now() + remaining`); `pause()` congela `remaining`, `start()` recalcula `endTime`, `addPreset` em execução desloca `endTime`; novo `getProgress()` para futura barra; `duration` com utilidade real; `update()` retorna `true` no frame de término e dispara `onFinished` (`setOnFinished`)
 - `main.lua`: funções internas + repetição do bip (1x/seg) movida de `t.beepAcc` para tabela local `beepAcc[i]`; `Timer` sem estado de áudio
 - Arquitetura (#9/#10): novos `ui/timer_view.lua` (botões + layout + desenho da célula), `ui/keypad.lua` (modal numérico), `input/controls.lua` (teclado + `cellAt`); `main.lua` (~495→~230 linhas) só orquestra
@@ -23,9 +62,6 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/).
 - UI (#6): keypad estilo calculadora — grade `← 0 C` (C só limpa), linha final `CANCELAR | OK`; modal 448→402px
 - `main.lua`: funções internas (`confirmEditingAndClose`, `cancelEditingAndClose`, `startEditing`, `setMode`, `repositionAll`, `refreshAllButtons`) agora `local` com forward-declares; só callbacks `love.*` permanecem globais
 - `theme.lua`: removido `pcall` desnecessário em `theme.load()`
-
-### Planejado
-- Plano de evolução extraído de `docs/plan.md` — ver `todo.md`.
 
 ## [0.1.0] - 2026-09-19
 ### Added

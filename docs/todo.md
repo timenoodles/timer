@@ -28,3 +28,11 @@ Ordem: base técnica primeiro (evita retrabalho), depois UI de alto impacto, ref
 - [x] #18 Rodapé de atalhos: `Space Start/Pause · T Set · Tab Next`
 - [x] #19 Alarme somente visual (sem bipe): removido caminho de áudio
   (`sound.playBeep`, repetição 1x/seg, `mute`); DONE = X vermelho + `00:00` piscando
+
+## Parte 2 — backlog pós-1.0.4 (fonte: rodadas de revisão web, 2026-09-19)
+
+- [ ] Touch mobile: `love.touchpressed/released` (hoje só mouse/teclado); alvos ≥44px; testar em celular real
+- [ ] Áudio web: confirmar bipe no primeiro término no site (autoplay policy; Space de início conta como gesto na maioria dos browsers)
+- [ ] Decisão harness web: manter 2dengine/love.js no `gh-pages` ou migrar p/ Davidobot (`web/index.html` tem botão Iniciar que resolve autoplay) — ver README "Web/publicação"
+- [x] `og:image` dedicado (`web/og-image.png` 1200×630 + publicado no `gh-pages`)
+- [ ] PWA/manifest (ícone, tema, offline além do cache love.js)
