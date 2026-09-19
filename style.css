@@ -7,7 +7,7 @@ body {
 body, #canvas {
   padding: 0;
   margin: 0;
-  background-color: #000;
+  background-color: #e6e6e0;
   overflow: hidden;
 }
 
@@ -19,8 +19,9 @@ body, #canvas {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  /* avoid letter-boxing in full screen mode */
-  object-fit: fill !important;
+  /* NOTE: love.js template uses fill; contain preserves aspect ratio
+     (no stretched circles on portrait phones). Reapply after bundle regen. */
+  object-fit: contain !important;
 }
 
 canvas:fullscreen {
