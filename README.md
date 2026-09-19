@@ -125,3 +125,6 @@ web/index.html   -- love.js container template (title, favicon, loading/error)
 - Autosave no navegador depende do `love.wasm` persistir `love.filesystem`
   em IndexedDB (IDBFS); se um F5 real resetar o estado, o problema é no
   build wasm, não em `store.lua`.
+- O título da aba só pisca com a aba visível: abas em segundo plano têm o
+  loop suspenso pelo navegador (throttling), então o flash do DONE aparece
+  ao voltar para a aba do timer.

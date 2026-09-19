@@ -73,6 +73,13 @@ function Store.apply(data, timers, nowFn, maxTimers)
             if st == "running" and saved.endTimestamp then
                 local left = tonumber(saved.endTimestamp) - nowFn()
                 if left > 0 then
+                    -- Teto: após reload o restante só pode ser <= último salvo.
+                    -- (No navegador a base de getTime pode recomeçar do zero a
+                    -- cada carregamento, e endTimestamp absoluto da sessão
+                    -- anterior estouraria para além do configurado.)
+                    local cap = math.min(tonumber(saved.remaining) or left,
+                        tonumber(saved.duration) or left)
+                    left = math.min(left, cap)
                     t.remaining = left
                     t.state = "running"
                     if t.setEndTime then t:setEndTime(nowFn() + left) end

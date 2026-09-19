@@ -30,6 +30,21 @@ do
     check("running remaining ~500", math.abs(t2.remaining - 500) < 1e-6)
 end
 
+-- Reload com base de relógio zerada (navegador): nunca ganha tempo.
+do
+    local t = Timer.new(1, "T1")
+    t:addPreset(10) -- 600s
+    t:start()       -- endTime = 1600
+    local collected = Store.collect({ t }, { now = fake })
+    -- endTimestamp absoluto da sessão anterior + relógio recomeçado do zero:
+    -- sem teto, left seria 1600 (muito além dos 600 configurados).
+    local t2 = Timer.new(1, "T1")
+    Store.apply(collected, { t2 }, function() return 0 end, 1)
+    check("reload web não ganha tempo", t2.remaining <= 600)
+    check("reload web usa último salvo", math.abs(t2.remaining - 600) < 1e-6)
+    check("reload web running", t2.state == "running")
+end
+
 -- Timer expirado durante reload vira finished.
 do
     local t = Timer.new(1, "T1")
