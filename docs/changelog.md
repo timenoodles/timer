@@ -1,0 +1,34 @@
+# Changelog
+
+Todas as mudanças notáveis do projeto serão documentadas aqui.
+Formato baseado em [Keep a Changelog](https://keepachangelog.com/).
+
+## [Unreleased]
+### Fixed - 2026-09-19
+- `timer.lua`: contagem por tempo real (`endTime = now() + remaining`); `pause()` congela `remaining`, `start()` recalcula `endTime`, `addPreset` em execução desloca `endTime`; novo `getProgress()` para futura barra; `duration` com utilidade real; `update()` retorna `true` no frame de término e dispara `onFinished` (`setOnFinished`)
+- `main.lua`: funções internas + repetição do bip (1x/seg) movida de `t.beepAcc` para tabela local `beepAcc[i]`; `Timer` sem estado de áudio
+- Arquitetura (#9/#10): novos `ui/timer_view.lua` (botões + layout + desenho da célula), `ui/keypad.lua` (modal numérico), `input/controls.lua` (teclado + `cellAt`); `main.lua` (~495→~230 linhas) só orquestra
+- UI (#7): rótulo `STOP` → `PAUSE` (comportamento real é `paused`); README atualizado
+- UI (#1): hierarquia de botões — START/PAUSE primário largo (peso 1.6x), presets+SET secundários, reset ↻ terciário pequeno (≤46px, cinza) visível só com tempo configurado
+- UI (#2): cabeçalho da célula com `T1/T2/T3` à esquerda e `● READY/RUN/PAUSED/DONE` à direita (texto + cor, sem depender só da cor)
+- UI (#4): LCD ampliado (faixa de botões 24%→18% da célula, máx 70→56px); dígitos centralizados abaixo do cabeçalho; LCD ~64% (célula 150px) a ~85% (modo 1 timer)
+- UI (#3): foco estrutural — borda neutra espessa (4px, cor `label`) em vez do anel azul, `lcdBgFocus` mais claro (0.60/0.68/0.60), indicador `▸` no título
+- UI (#5): removida frase `digitando...` do LCD; em edição o cabeçalho mostra `● SET` e o tempo digitado aparece direto (o modal já indica a edição)
+- P3 (#18): rodapé discreto de atalhos (faixa 24px reservada no layout)
+- P3 (#14): microanimações — ● pulsante em RUN (dotAlpha/sin), estático em PAUSED, só 00:00 pisca + som em DONE
+- P3 (#17): barra de progresso discreta 4px abaixo do LCD (usa getProgress do #8)
+- P3 (#12): layout responsivo — wide (aspect>=1.0): 2 lado a lado, 3 em grade 2+1; retrato mantém vertical
+- UI (#13): paleta padronizada — presets só amarelo, ação azul (SET, modo ativo, dot PAUSED), confirmar verde, perigo só C do keypad, neutro cinza (reset ↻, CANCELAR)
+- UI (#11): seletor de modo discreto — botões 32→26px, rótulo TIMERS, só ativo em destaque
+- UI (#6): keypad estilo calculadora — grade `← 0 C` (C só limpa), linha final `CANCELAR | OK`; modal 448→402px
+- `main.lua`: funções internas (`confirmEditingAndClose`, `cancelEditingAndClose`, `startEditing`, `setMode`, `repositionAll`, `refreshAllButtons`) agora `local` com forward-declares; só callbacks `love.*` permanecem globais
+- `theme.lua`: removido `pcall` desnecessário em `theme.load()`
+
+### Planejado
+- Plano de evolução extraído de `docs/plan.md` — ver `todo.md`.
+
+## [0.1.0] - 2026-09-19
+### Added
+- Estrutura inicial: `main.lua`, `timer.lua`, `button.lua`, `layout.lua`, `theme.lua`, `sound.lua`
+- Contador com presets 5m/10m/20m, SET via keypad modal, START/STOP, CLR
+- Suporte a 1/2/3 timers, LCD, indicador de foco, seletor de modo
