@@ -1,9 +1,15 @@
 -- store.lua
 -- Persistência simples do estado (love.filesystem, formato Lua serializado).
--- Salva: remaining, duration, state, endTimestamp, label, mode, focus, presets, sound.
--- endTimestamp permite recalcular remaining de timers running após reload.
+-- Salva: remaining, duration, state, endTimestampWall, label, mode, focus, presets, sound.
+-- endTimestampWall usa relógio de parede (os.time(), época Unix, em segundos):
+-- love.timer.getTime() zera a cada carregamento de página no Web, então um
+-- timestamp monotônico da sessão anterior não é comparável ao "agora" da
+-- sessão seguinte. O tique intra-sessão continua em getTime() (Timer:update).
 
 local Store = {}
+
+local StrUtil = nil
+pcall(function() StrUtil = require("strutil") end)
 
 -- Serializa tabela simples (números, strings, booleans, tabelas aninhadas).
 local function serialize(v, indent)
@@ -55,12 +61,20 @@ function Store.clear(filename)
     return true
 end
 
--- Aplica estado carregado aos timers; nowFn = função de tempo atual (love.timer.getTime).
+-- Aplica estado carregado aos timers; nowFn = tempo monotônico atual
+-- (love.timer.getTime, p/ reconstruir endTime intra-sessão),
+-- nowWallFn = relógio de parede atual (os.time, p/ descontar tempo real).
 -- Retorna {mode, focusIndex} para o app aplicar.
-function Store.apply(data, timers, nowFn, maxTimers)
+function Store.apply(data, timers, nowFn, maxTimers, nowWallFn)
     if type(data) ~= "table" then return nil end
     nowFn = nowFn or os.clock
+    nowWallFn = nowWallFn or os.time
     maxTimers = maxTimers or 3
+    local function truncLabel(s)
+        s = tostring(s)
+        if StrUtil and StrUtil.truncateUtf8 then return StrUtil.truncateUtf8(s, 6) end
+        return s:sub(1, 6)
+    end
     for i = 1, maxTimers do
         local t, saved = timers[i], data.timers and data.timers[i]
         if t and type(saved) == "table" then
@@ -68,15 +82,12 @@ function Store.apply(data, timers, nowFn, maxTimers)
             t.duration = tonumber(saved.duration) or 0
             t.endTime = nil
             t.state = "idle"
-            if saved.label then t.label = tostring(saved.label):sub(1, 6) end
+            if saved.label then t.label = truncLabel(saved.label) end
             local st = saved.state
-            if st == "running" and saved.endTimestamp then
-                local left = tonumber(saved.endTimestamp) - nowFn()
+            if st == "running" and saved.endTimestampWall then
+                local left = tonumber(saved.endTimestampWall) - nowWallFn()
                 if left > 0 then
-                    -- Teto: após reload o restante só pode ser <= último salvo.
-                    -- (No navegador a base de getTime pode recomeçar do zero a
-                    -- cada carregamento, e endTimestamp absoluto da sessão
-                    -- anterior estouraria para além do configurado.)
+                    -- Teto de segurança: nunca restaura além do último salvo.
                     local cap = math.min(tonumber(saved.remaining) or left,
                         tonumber(saved.duration) or left)
                     left = math.min(left, cap)
@@ -95,22 +106,24 @@ function Store.apply(data, timers, nowFn, maxTimers)
     return { mode = data.mode, focusIndex = data.focusIndex, presets = data.presets, sound = data.sound, theme = data.theme }
 end
 
--- Coleta estado atual para salvar. endBase = tempo atual (para endTimestamp).
+-- Coleta estado atual para salvar. opts.now = tempo monotônico atual
+-- (para medir `left` via endTime); opts.nowWall = relógio de parede atual
+-- (para endTimestampWall; padrão os.time()).
 function Store.collect(timers, opts)
     opts = opts or {}
     local out = { timers = {}, mode = opts.mode or 1, focusIndex = opts.focusIndex or 1,
         presets = opts.presets, sound = opts.sound, theme = opts.theme }
-    local nowV = opts.now or 0
+    local nowWall = opts.nowWall or os.time()
     for i, t in ipairs(timers) do
         local entry = { remaining = t.remaining, duration = t.duration,
             state = t.state, label = t.label }
         if t.state == "running" then
-            -- endTime interno usa mesma base de now; reconstrói timestamp absoluto.
+            -- endTime interno usa base monotônica; reconstrói o restante.
             local left = t.remaining
             if t.endTime and opts.now then
                 left = math.max(0, t.endTime - opts.now)
             end
-            entry.endTimestamp = nowV + left
+            entry.endTimestampWall = nowWall + left
             entry.remaining = left
         end
         out.timers[i] = entry

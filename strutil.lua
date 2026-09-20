@@ -31,4 +31,18 @@ function StrUtil.stripLastChar(s)
     return s:sub(1, i - 1)
 end
 
+-- Trunca em no máximo maxBytes sem cortar um caractere UTF-8 ao meio:
+-- se o corte cair num byte de continuação (0x80-0xBF), recua até o
+-- início do caractere.
+function StrUtil.truncateUtf8(s, maxBytes)
+    s = tostring(s or "")
+    maxBytes = tonumber(maxBytes) or #s
+    if #s <= maxBytes then return s end
+    local i = maxBytes
+    while i > 0 and s:byte(i + 1) >= 0x80 and s:byte(i + 1) < 0xC0 do
+        i = i - 1
+    end
+    return s:sub(1, i)
+end
+
 return StrUtil

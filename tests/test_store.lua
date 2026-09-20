@@ -15,34 +15,47 @@ end
 local fake = 1000
 Timer.setClock(function() return fake end)
 
--- Timer running: apply recalcula remaining via endTimestamp.
+-- Timer running: apply recalcula remaining via endTimestampWall.
 do
     local t = Timer.new(1, "T1")
     t:addPreset(10) -- 600s
     t:start()       -- endTime = 1600
     local collected = Store.collect({ t }, { mode = 2, focusIndex = 1,
-        presets = { 20, 10, 5 }, sound = "beep", now = fake })
-    check("collect endTimestamp", collected.timers[1].endTimestamp == 1600)
-    -- Simula reload 100s depois.
+        presets = { 20, 10, 5 }, sound = "beep", now = fake, nowWall = 5000 })
+    check("collect endTimestampWall", collected.timers[1].endTimestampWall == 5600)
+    -- Simula reload 100s de tempo real depois (relógio monotônico zerado,
+    -- como no navegador; só a parede importa).
     local t2 = Timer.new(1, "T1")
-    Store.apply(collected, { t2 }, function() return 1100 end, 1)
+    Store.apply(collected, { t2 }, function() return 0 end, 1, function() return 5100 end)
     check("running restaura running", t2.state == "running")
     check("running remaining ~500", math.abs(t2.remaining - 500) < 1e-6)
 end
 
--- Reload com base de relógio zerada (navegador): nunca ganha tempo.
+-- Reload com relógio monotônico zerado (navegador): desconta tempo real,
+-- nunca ganha tempo.
 do
     local t = Timer.new(1, "T1")
     t:addPreset(10) -- 600s
     t:start()       -- endTime = 1600
-    local collected = Store.collect({ t }, { now = fake })
-    -- endTimestamp absoluto da sessão anterior + relógio recomeçado do zero:
-    -- sem teto, left seria 1600 (muito além dos 600 configurados).
+    local collected = Store.collect({ t }, { now = fake, nowWall = 5000 })
+    -- 5s reais depois, relógio novo começa do zero:
     local t2 = Timer.new(1, "T1")
-    Store.apply(collected, { t2 }, function() return 0 end, 1)
+    Store.apply(collected, { t2 }, function() return 0.05 end, 1, function() return 5005 end)
     check("reload web não ganha tempo", t2.remaining <= 600)
-    check("reload web usa último salvo", math.abs(t2.remaining - 600) < 1e-6)
+    check("reload web desconta tempo real", math.abs(t2.remaining - 595) < 1e-6)
     check("reload web running", t2.state == "running")
+end
+
+-- Timer expirado enquanto a aba estava fechada vira finished.
+do
+    local t = Timer.new(1, "T1")
+    t:addPreset(10) -- 600s
+    t:start()
+    local collected = Store.collect({ t }, { now = fake, nowWall = 5000 })
+    local t2 = Timer.new(1, "T1")
+    Store.apply(collected, { t2 }, function() return 0.2 end, 1, function() return 5000 + 601 end)
+    check("expirado após reload vira finished", t2.state == "finished")
+    check("expirado remaining 0", t2.remaining == 0)
 end
 
 -- Timer expirado durante reload vira finished.
@@ -50,9 +63,9 @@ do
     local t = Timer.new(1, "T1")
     t:addPreset(1)
     t:start()
-    local collected = Store.collect({ t }, { now = fake })
+    local collected = Store.collect({ t }, { now = fake, nowWall = 8000 })
     local t2 = Timer.new(1, "T1")
-    Store.apply(collected, { t2 }, function() return fake + 61 end, 1)
+    Store.apply(collected, { t2 }, function() return fake + 61 end, 1, function() return 8000 + 61 end)
     check("expirado vira finished", t2.state == "finished")
 end
 
@@ -95,6 +108,20 @@ do
     fake = fake + 2
     t:update(0)
     check("1h termina", t.state == "finished")
+end
+
+-- Truncamento UTF-8 nunca corta caractere ao meio.
+do
+    local StrUtil = require("strutil")
+    check("truncate ascii", StrUtil.truncateUtf8("ABCDEF12", 6) == "ABCDEF")
+    check("truncate café 4B vira CAF", StrUtil.truncateUtf8("CAFÉ", 4) == "CAF")
+    local t = Timer.new(1, "T1")
+    t:setLabel("CAFÉ123", 4)
+    check("setLabel não quebra UTF-8", t.label == "CAF")
+    local t2 = Timer.new(1, "T1")
+    Store.apply({ timers = { { remaining = 10, duration = 10, state = "paused", label = "CAFÉ12" } } },
+        { t2 }, function() return 0 end, 1, function() return 0 end)
+    check("store label não quebra UTF-8", t2.label == "CAFÉ1")
 end
 
 Timer.resetClock()

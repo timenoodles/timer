@@ -55,7 +55,7 @@ function Timer:setLabel(name, maxLen)
     maxLen = maxLen or 6
     local s = StrUtil.upperLabel(name):gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", "")
     if #s == 0 then return false end
-    if #s > maxLen then s = s:sub(1, maxLen) end
+    if #s > maxLen then s = StrUtil.truncateUtf8(s, maxLen) end
     self.label = s
     return true
 end

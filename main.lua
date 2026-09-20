@@ -95,7 +95,7 @@ local function saveNow()
     local nowV = (love.timer and love.timer.getTime) and love.timer.getTime() or os.clock()
     Store.save(config.stateFile, Store.collect(timers,
         { mode = mode, focusIndex = focusIndex, presets = config.presets,
-          sound = notif.mode, theme = theme.currentTheme, now = nowV }))
+          sound = notif.mode, theme = theme.currentTheme, now = nowV, nowWall = os.time() }))
 end
 
 local function cycleSound()
@@ -189,12 +189,12 @@ function love.load()
     for i = 1, 3 do
         timers[i] = Timer.new(i, "T" .. i)
     end
-    -- Restaura estado salvo (remaining/endTimestamp, labels, mode, presets, som).
+    -- Restaura estado salvo (remaining/endTimestampWall, labels, mode, presets, som).
     do
         local data = Store.load(config.stateFile)
         if data then
             local nowV = (love.timer and love.timer.getTime) and love.timer.getTime() or os.clock()
-            local res = Store.apply(data, timers, function() return nowV end, 3)
+            local res = Store.apply(data, timers, function() return nowV end, 3, os.time)
             if res then
                 if res.mode and res.mode >= 1 and res.mode <= 3 then app.mode = res.mode end
                 if res.focusIndex and res.focusIndex >= 1 and res.focusIndex <= 3 then

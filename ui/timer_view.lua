@@ -151,8 +151,11 @@ function TimerView:draw(cell, theme, layout, mode, focused)
     local lcdX = cell.x + 10
     local lcdY = cell.y + 10
     local lcdW = cell.w - 20
-    -- Faixa reservada p/ barra de progresso (evita overlap com fileira de botões).
-    local barH, barGap = 5, 5
+    -- Faixa da barra de progresso só reserva espaço quando há algo a mostrar
+    -- (duration > 0); timer ocioso devolve esses 10px aos dígitos.
+    local barH, barGap = 0, 0
+    local prog = t.getProgress and t:getProgress() or 0
+    if (t.duration or 0) > 0 then barH, barGap = 5, 5 end
     local lcdH = cell.h - rowH - 18 - barH - barGap
 
     local lcdBg
@@ -167,7 +170,6 @@ function TimerView:draw(cell, theme, layout, mode, focused)
     love.graphics.rectangle("fill", lcdX, lcdY, lcdW, lcdH, 8, 8)
 
     -- Barra de progresso discreta dentro da área reservada (nunca sob botões).
-    local prog = t.getProgress and t:getProgress() or 0
     if prog > 0 then
         local barY = lcdY + lcdH + 3
         love.graphics.setColor(0, 0, 0, 0.12)
@@ -211,28 +213,50 @@ function TimerView:draw(cell, theme, layout, mode, focused)
         love.graphics.circle("fill", sx, sy, 4) -- idle: ponto pequeno neutro
     end
 
-    local font = layout.lcdFontFor(theme, mode, { w = lcdW, h = lcdH })
-    love.graphics.setFont(font)
-
     local text = t:getDisplayText()
-    local visible = t:isBlinkVisible()
-    local digitColor = theme.colors.lcdDigitOn
-    if t.state == "finished" then
-        digitColor = theme.colors.lcdDigitFinished
-    end
-
-    love.graphics.setColor(theme.colors.lcdDigitGhost)
     local hasHours = string.find(text, ":.*:") ~= nil
     local ghostText = hasHours and "88:88:88" or "88:88"
     -- Dígitos centralizados na área livre abaixo do cabeçalho (só indicadores).
     local headerH = 26
     local digitAreaY = lcdY + headerH
     local digitAreaH = lcdH - headerH
-    love.graphics.printf(ghostText, lcdX, digitAreaY + (digitAreaH - font:getHeight()) / 2, lcdW, "center")
+    local availW = math.max(40, lcdW - 12)
+    local availH = math.max(24, digitAreaH - 8)
+    local visible = t:isBlinkVisible()
+    local digitColor = theme.colors.lcdDigitOn
+    if t.state == "finished" then
+        digitColor = theme.colors.lcdDigitFinished
+    end
 
-    if visible then
-        love.graphics.setColor(digitColor)
-        love.graphics.printf(text, lcdX, digitAreaY + (digitAreaH - font:getHeight()) / 2, lcdW, "center")
+    local base = theme.fonts and theme.fonts.lcdHuge
+    if base and base.getWidth and base.getHeight and love.graphics.print then
+        -- Escala contínua a partir da fonte grande: tamanho exato da célula,
+        -- podendo ampliar além dos 120pt (teto maxScale). Redução é nítida;
+        -- ampliação limitada p/ não pixelar em células gigantes.
+        local scale = layout.lcdScaleFor(base, availW, availH, text)
+        love.graphics.setFont(base)
+        local function drawScaled(str)
+            local tw, th = base:getWidth(str) * scale, base:getHeight() * scale
+            local x = lcdX + (lcdW - tw) / 2
+            local y = digitAreaY + (digitAreaH - th) / 2
+            love.graphics.print(str, x, y, 0, scale, scale)
+        end
+        love.graphics.setColor(theme.colors.lcdDigitGhost)
+        drawScaled(ghostText)
+        if visible then
+            love.graphics.setColor(digitColor)
+            drawScaled(text)
+        end
+    else
+        -- Fallback: escada discreta de fontes (ex. testes sem LÖVE gráfico).
+        local font = layout.lcdFontFor(theme, mode, { w = lcdW, h = lcdH }, text)
+        love.graphics.setFont(font)
+        love.graphics.setColor(theme.colors.lcdDigitGhost)
+        love.graphics.printf(ghostText, lcdX, digitAreaY + (digitAreaH - font:getHeight()) / 2, lcdW, "center")
+        if visible then
+            love.graphics.setColor(digitColor)
+            love.graphics.printf(text, lcdX, digitAreaY + (digitAreaH - font:getHeight()) / 2, lcdW, "center")
+        end
     end
 
     love.graphics.setColor(1, 1, 1, 1)

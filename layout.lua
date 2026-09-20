@@ -51,8 +51,11 @@ function layout.cellsFor(mode, screenW, screenH)
 end
 
 -- Escolhe qual tamanho de fonte LCD usar: maior que caiba na célula real.
--- cell: {w, h} da área do LCD (ou da célula); mede contra texto de referência.
-function layout.lcdFontFor(theme, _mode, cell)
+-- cell: {w, h} da área do LCD (ou da célula); mede contra o texto de referência.
+-- displayText (opcional): texto real a desenhar; sem horas ("MM:SS") usa a
+-- referência estreita "88:88", liberando uma categoria maior de fonte no caso
+-- comum < 1h. Sem displayText, mantém o pior caso "88:88:88" (seguro).
+function layout.lcdFontFor(theme, _mode, cell, displayText)
     -- Sem teto por modo: sempre testa do maior ao menor; o tamanho real da célula decide.
     local order = { "lcdHuge", "lcdBig", "lcdMed", "lcdSmall" }
     if not cell or not cell.w or not theme.fonts[order[1]] then
@@ -61,7 +64,9 @@ function layout.lcdFontFor(theme, _mode, cell)
     -- Área útil p/ dígitos: desconta cabeçalho (~28px) e margens.
     local availW = math.max(40, cell.w - 32)
     local availH = math.max(24, (cell.h or 100) - 36)
-    local refText = "88:88:88" -- pior caso (mais largo); garante que horas cabem
+    local hasHours = displayText and displayText:find(":.*:") ~= nil
+    local refText = hasHours and "88:88:88" or "88:88"
+    if displayText == nil then refText = "88:88:88" end -- chamadores antigos: pior caso
     for _, name in ipairs(order) do
         local f = theme.fonts[name]
         if f and f:getWidth(refText) <= availW and f:getHeight() <= availH then
@@ -69,6 +74,27 @@ function layout.lcdFontFor(theme, _mode, cell)
         end
     end
     return theme.fonts[order[#order]]
+end
+
+-- Escala contínua: fator que faz o texto de referência preencher a área
+-- útil (availW x availH) a partir de uma fonte base (ex. lcdHuge).
+-- displayText escolhe a referência ("88:88" vs "88:88:88"), como em lcdFontFor.
+-- maxScale limita ampliação (padrão 2.5× da base); redução nunca é limitada.
+-- Retorna 1 se a base for inválida.
+function layout.lcdScaleFor(baseFont, availW, availH, displayText, maxScale)
+    maxScale = maxScale or 2.5
+    if not baseFont or not baseFont.getWidth or not baseFont.getHeight then return 1 end
+    availW = math.max(1, availW or 1)
+    availH = math.max(1, availH or 1)
+    local hasHours = displayText and displayText:find(":.*:") ~= nil
+    local refText = hasHours and "88:88:88" or "88:88"
+    if displayText == nil then refText = "88:88:88" end
+    local rw, rh = baseFont:getWidth(refText), baseFont:getHeight()
+    if not rw or not rh or rw <= 0 or rh <= 0 then return 1 end
+    local scale = math.min(availW / rw, availH / rh)
+    if scale > maxScale then scale = maxScale end
+    if scale <= 0 then return 1 end
+    return scale
 end
 
 return layout

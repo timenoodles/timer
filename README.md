@@ -73,7 +73,7 @@ app.lua         -- app controller (mode, focus, rename, sound; no drawing)
 timer.lua       -- pure countdown logic (no drawing, no audio; injectable clock)
 config.lua      -- central config: presets, sound mode, autosave, label limit
 notification.lua -- finish alarm (beeps + title flash), wired via setOnFinished
-store.lua       -- save/restore state via love.filesystem (endTimestamp)
+store.lua       -- save/restore state via love.filesystem (endTimestampWall)
 button.lua      -- reusable button component
 layout.lua      -- cell layout for each mode (1/2/3 timers)
 theme.lua       -- colors and fonts
