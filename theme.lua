@@ -101,8 +101,18 @@ function theme.load()
 
     local function loadFont(path, size)
         local ok, font = pcall(love.graphics.newFont, path, size)
-        if ok and font then return font end
-        return love.graphics.newFont(size) -- fallback sans se o .ttf faltar
+        if ok and font then
+            -- LCD nítido em HiDPI: nearest evita blur de upscaling
+            pcall(function() font:setFilter("nearest", "nearest") end)
+            return font
+        end
+        -- Fallback visível para diagnóstico (assets faltando no build web)
+        if love and love.system then
+            pcall(function() print("[theme] fallback font for " .. tostring(path)) end)
+        end
+        local fb = love.graphics.newFont(size)
+        pcall(function() fb:setFilter("linear", "linear") end)
+        return fb
     end
 
     -- Fontes LCD (7 segmentos) em varios tamanhos para os diferentes layouts.
@@ -116,6 +126,11 @@ function theme.load()
     theme.fonts.uiMed    = loadFont("assets/fonts/MPLUSRounded1c-Medium.ttf", 18)
     theme.fonts.uiLarge  = loadFont("assets/fonts/MPLUSRounded1c-Medium.ttf", 24)
     theme.fonts.uiLabel  = loadFont("assets/fonts/MPLUSRounded1c-Medium.ttf", 16)
+    -- UI fica melhor com filtro linear (curvas suaves)
+    for _, k in ipairs({ "uiSmall", "uiMed", "uiLarge", "uiLabel" }) do
+        local f = theme.fonts[k]
+        if f then pcall(function() f:setFilter("linear", "linear") end) end
+    end
 end
 
 return theme

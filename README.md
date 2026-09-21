@@ -65,6 +65,26 @@ independent timers** on screen, each running on its own.
 Timers keep running in the background — switching layouts (e.g. from
 3 to 1 timer) does not pause the hidden ones.
 
+### Teclado (PT-BR)
+| Tecla              | Ação                                         |
+|------------------|-----------------------------------------------|
+| `Tab` / `Shift+Tab` | Mover foco entre timers                    |
+| `Espaço`          | Iniciar/Pausar (ou reiniciar, se finalizado) |
+| `R`              | Limpar (resetar) o timer focado               |
+| `T`              | Abrir teclado numérico (timer focado)         |
+| `N`              | Renomear timer (`Enter` confirma, `Esc` cancela) |
+| `S`              | Alternar som (`off`→`beep`→`repeat3`→`repeat`) |
+| `P`              | Abrir configurações                           |
+| `Y`              | Limpar estado salvo                           |
+| `F11`            | Alternar tela cheia (persiste ao recarregar)  |
+| `1`, `2`, `3`    | Alternar layout (1, 2 ou 3 timers)            |
+| *(editando)* dígitos `0-9` | Digitar tempo (HH MM SS)          |
+| *(editando)* setas/`Tab` | Navegar no keypad                     |
+| *(editando)* `Espaço`/`Enter` | Ativar botão selecionado / confirmar |
+| `Enter`          | Confirmar tempo digitado                      |
+| `Backspace`      | Apagar último dígito                          |
+| `Esc`            | Cancelar edição                               |
+
 ## Project structure
 
 ```

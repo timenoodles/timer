@@ -124,6 +124,22 @@ do
     check("store label não quebra UTF-8", t2.label == "CAFÉ1")
 end
 
+-- Versionamento: schema futuro ignorado, presets/sound/theme sanitizados
+do
+    local t = Timer.new(1, "T1")
+    local future = { version = 99, timers = { { remaining = 10, duration = 10, state="paused" } }, mode=1 }
+    local res = Store.apply(future, {t}, function() return 0 end, 1, function() return 0 end)
+    check("version futura ignorada", res == nil)
+    local bad = { timers = { { remaining=5, duration=5, state="paused"} }, presets = { 999, "x", -1 }, sound="invalid", theme="neon" }
+    local t2 = Timer.new(1,"T1")
+    local res2 = Store.apply(bad, {t2}, function() return 0 end, 1, function() return 0 end)
+    check("presets invalidos sanitizados", res2.presets == nil)
+    check("sound invalido sanitizado", res2.sound == nil)
+    check("theme invalido sanitizado", res2.theme == nil)
+    local withFS = Store.collect({t}, {mode=1, fullscreen=true, now=0, nowWall=0})
+    check("collect fullscreen", withFS.fullscreen == true)
+end
+
 Timer.resetClock()
 
 if failures > 0 then print(failures .. " FALHA(S)") os.exit(1)

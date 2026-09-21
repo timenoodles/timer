@@ -16,6 +16,7 @@ local TimerView = require("ui.timer_view")
 local Keypad    = require("ui.keypad")
 local Settings  = require("ui.settings")
 local Controls  = require("input.controls")
+local TimeUtil  = require("timeutil")
 
 local screenW, screenH = 900, 700
 
@@ -74,6 +75,7 @@ local function cancelEditingAndClose()
 end
 
 local function startEditing(i)
+    if app:isRenaming() then return end
     if editingTimer and editingTimer ~= timers[i] then
         editingTimer:cancelEditing()
     end
@@ -87,15 +89,23 @@ local function setMode(m)
     if app:setMode(m) then
         syncFromApp()
         repositionAll()
+        for i=1,3 do if views[i] and views[i].triggerScale then views[i]:triggerScale() end end
     end
 end
 
 local function saveNow()
     if not config.autosave then return end
-    local nowV = (love.timer and love.timer.getTime) and love.timer.getTime() or os.clock()
-    Store.save(config.stateFile, Store.collect(timers,
+    local nowV = TimeUtil.now()
+    local fs = false
+    pcall(function() fs = love.window.getFullscreen() end)
+    local ok, res, err = pcall(Store.save, config.stateFile, Store.collect(timers,
         { mode = mode, focusIndex = focusIndex, presets = config.presets,
-          sound = notif.mode, theme = theme.currentTheme, now = nowV, nowWall = os.time() }))
+          sound = notif.mode, theme = theme.currentTheme, fullscreen = fs, now = nowV, nowWall = os.time() }))
+    if not ok then
+        pcall(function() print("[save] pcall failed: " .. tostring(res)) end)
+    elseif res == false then
+        pcall(function() print("[save] Store.save failed: " .. tostring(err)) end)
+    end
 end
 
 local function cycleSound()
@@ -106,6 +116,7 @@ end
 
 local function startRenaming(i)
     if editingTimer then return end
+    if app:isRenaming() then return end
     app:startRename(i, timers[i].label)
     syncFromApp()
 end
@@ -127,6 +138,7 @@ end
 local function toggleFullscreen()
     local fs = love.window.getFullscreen()
     love.window.setFullscreen(not fs)
+    saveNow()
 end
 
 repositionAll = function()
@@ -179,7 +191,7 @@ end
 
 function love.load()
     love.window.setTitle("Multi Timer - Japanese Style")
-    love.window.setMode(screenW, screenH, { resizable = true,
+    love.window.setMode(screenW, screenH, { resizable = true, highdpi = true,
         minwidth = (love.system and love.system.getOS() == "Web") and 320 or 640,
         minheight = (love.system and love.system.getOS() == "Web") and 240 or 480 })
     love.graphics.setBackgroundColor(theme.colors.bg)
@@ -191,9 +203,13 @@ function love.load()
     end
     -- Restaura estado salvo (remaining/endTimestampWall, labels, mode, presets, som).
     do
-        local data = Store.load(config.stateFile)
+        local okLoad, data = pcall(Store.load, config.stateFile)
+        if not okLoad then
+            pcall(function() print("[load] pcall failed: " .. tostring(data)) end)
+            data = nil
+        end
         if data then
-            local nowV = (love.timer and love.timer.getTime) and love.timer.getTime() or os.clock()
+            local nowV = TimeUtil.now()
             local res = Store.apply(data, timers, function() return nowV end, 3, os.time)
             if res then
                 if res.mode and res.mode >= 1 and res.mode <= 3 then app.mode = res.mode end
@@ -210,6 +226,9 @@ function love.load()
                 end
                 if res.theme then
                     config.theme = theme.setTheme(res.theme)
+                end
+                if res.fullscreen == true then
+                    pcall(function() love.window.setFullscreen(true) end)
                 end
                 syncFromApp()
             end
@@ -281,16 +300,33 @@ function love.load()
         onDigit = function(d) if editingTimer then editingTimer:typeDigit(d) end end,
         onBackspace = function() if editingTimer then editingTimer:backspace() end end,
     })
+    -- getDimensions retorna pontos lógicos quando highdpi=true (framebuffer = pontos * getDPIScale)
     screenW, screenH = love.graphics.getDimensions()
     repositionAll()
 end
 
+local pendingResize = nil
+local resizeDebounce = 0
+
 function love.resize(w, h)
+    -- w,h de love.resize já são pontos lógicos; layout trabalha em pontos
+    -- Debounce: repositionAll pode ser caro com fontes HiDPI; evita jank em drag
+    pendingResize = { w = w, h = h }
+    resizeDebounce = 0.03
+    -- Atualiza dimensões imediatamente para não quebrar hit-test, mas layout só no debounce
     screenW, screenH = w, h
-    repositionAll()
 end
 
 function love.update(dt)
+    if pendingResize then
+        resizeDebounce = resizeDebounce - dt
+        if resizeDebounce <= 0 then
+            local pr = pendingResize
+            pendingResize = nil
+            screenW, screenH = pr.w, pr.h
+            repositionAll()
+        end
+    end
     for i = 1, 3 do
         local t = timers[i]
         if not t.editing then
@@ -300,6 +336,7 @@ function love.update(dt)
     notif:update(dt)
     for i = 1, mode do
         views[i]:refresh()
+        if views[i].update then views[i]:update(dt, i==focusIndex and not editingTimer, mode) end
     end
     -- Autosave periódico do estado.
     if config.autosave then

@@ -11,10 +11,15 @@ local function rowHeightFor(cellH)
     return math.max(44, math.min(56, cellH * 0.18))
 end
 
+local function lerp(a,b,t) return a + (b-a)*t end
+local function lerpColor(c1,c2,t) return {lerp(c1[1],c2[1],t), lerp(c1[2],c2[2],t), lerp(c1[3],c2[3],t)} end
+
 function TimerView.new(timer, onEditRequest, presets)
     local self = setmetatable({}, TimerView)
     self.timer = timer
     self.onEditRequest = onEditRequest
+    self._lcdBg = nil
+    self._scaleT = 1
     local t = timer
     self.presetBtns = {}
     self.presetVals = {}
@@ -29,6 +34,7 @@ function TimerView.new(timer, onEditRequest, presets)
         if onEditRequest then onEditRequest() end
     end)
     self.startStopBtn = Button.new(0, 0, 10, 10, "START", "green", function() t:toggleStartStop() end)
+    -- font será ajustada em refresh() após theme.load (evita require circular no love.load)
     self.clearBtn = Button.new(0, 0, 10, 10, "", "gray", function() t:clear() end)
     self.clearBtn.icon = "reset" -- arco vetorial desenhado por cima; label vazio (sem texto morto)
     self.clearBtn.accessibleLabel = "CLR" -- texto alternativo p/ acessibilidade/log
@@ -104,10 +110,36 @@ function TimerView:refresh()
     end
     self.startStopBtn.enabled = (t.remaining > 0) or (t.state == "running")
         or (t.state == "finished" and (t.duration or 0) > 0)
+    -- Hierarquia: START/PAUSE maior (uiLarge se couber)
+    local theme = require("theme")
+    if theme.fonts and theme.fonts.uiLarge then self.startStopBtn.font = theme.fonts.uiLarge end
     self.setBtn.enabled = true
-    -- Reset discreto: só aparece quando há algo a limpar.
+    -- Reset discreto: só aparece quando há algo a limpar. Tooltip via hover handled in button draw (title).
     self.clearBtn.visible = (t.remaining > 0) or (t.duration > 0)
         or (t.state == "running") or (t.state == "paused") or (t.state == "finished")
+end
+
+function TimerView:update(dt, focused, mode)
+    -- lerp lcdBg para transição suave de foco
+    local dimmed = (mode > 1) and not focused
+    local theme = require("theme")
+    local target
+    if focused then target = theme.colors.lcdBgFocus
+    elseif dimmed then target = theme.colors.lcdBgDim or theme.colors.lcdBg
+    else target = theme.colors.lcdBg end
+    self._lcdBg = self._lcdBg or {target[1], target[2], target[3]}
+    local k = 1 - math.exp(-12 * dt) -- ~150ms
+    self._lcdBg[1] = lerp(self._lcdBg[1], target[1], k)
+    self._lcdBg[2] = lerp(self._lcdBg[2], target[2], k)
+    self._lcdBg[3] = lerp(self._lcdBg[3], target[3], k)
+    -- scale transition for mode change (pop 0.97->1)
+    if self._scaleT < 1 then
+        self._scaleT = math.min(1, self._scaleT + dt*6)
+    end
+end
+
+function TimerView:triggerScale()
+    self._scaleT = 0.96
 end
 
 function TimerView:collectButtons(list)
@@ -131,6 +163,9 @@ function TimerView:draw(cell, theme, layout, mode, focused)
     local t = self.timer
     -- Timer não-focado em modo multi fica visualmente secundário.
     local dimmed = (mode > 1) and not focused
+    -- Sombra suave do case (objeto físico)
+    love.graphics.setColor(0, 0, 0, 0.10)
+    love.graphics.rectangle("fill", cell.x + 2, cell.y + 4, cell.w, cell.h, 14, 14)
     love.graphics.setColor(theme.colors.caseBg)
     love.graphics.rectangle("fill", cell.x, cell.y, cell.w, cell.h, 14, 14)
     -- Foco estrutural: borda neutra mais espessa + anel externo sutil.
@@ -158,16 +193,31 @@ function TimerView:draw(cell, theme, layout, mode, focused)
     if (t.duration or 0) > 0 then barH, barGap = 5, 5 end
     local lcdH = cell.h - rowH - 18 - barH - barGap
 
-    local lcdBg
-    if focused then
-        lcdBg = theme.colors.lcdBgFocus
-    elseif dimmed then
-        lcdBg = theme.colors.lcdBgDim or theme.colors.lcdBg
-    else
-        lcdBg = theme.colors.lcdBg
+    local lcdBg = self._lcdBg
+    if not lcdBg then
+        if focused then lcdBg = theme.colors.lcdBgFocus
+        elseif dimmed then lcdBg = theme.colors.lcdBgDim or theme.colors.lcdBg
+        else lcdBg = theme.colors.lcdBg end
+    end
+    -- scale pop for mode transition
+    local cellScale = self._scaleT or 1
+    local scOffX, scOffY = 0,0
+    if cellScale ~= 1 then
+        scOffX = (cell.w * (1-cellScale))/2
+        scOffY = (cell.h * (1-cellScale))/2
+        cell = {x=cell.x+scOffX, y=cell.y+scOffY, w=cell.w*cellScale, h=cell.h*cellScale}
+        lcdX = cell.x + 10
+        lcdY = cell.y + 10
+        lcdW = cell.w - 20
+        lcdH = cell.h - rowH - 18 - barH - barGap
     end
     love.graphics.setColor(lcdBg)
     love.graphics.rectangle("fill", lcdX, lcdY, lcdW, lcdH, 8, 8)
+    -- Gradiente sutil vertical (brilho LCD) - overlay claro no topo
+    love.graphics.setColor(1, 1, 1, 0.06)
+    love.graphics.rectangle("fill", lcdX, lcdY, lcdW, lcdH * 0.45, 8, 8)
+    love.graphics.setColor(0, 0, 0, 0.07)
+    love.graphics.rectangle("fill", lcdX, lcdY + lcdH * 0.7, lcdW, lcdH * 0.30, 8, 8)
 
     -- Barra de progresso discreta dentro da área reservada (nunca sob botões).
     if prog > 0 then
@@ -234,6 +284,11 @@ function TimerView:draw(cell, theme, layout, mode, focused)
         -- podendo ampliar além dos 120pt (teto maxScale). Redução é nítida;
         -- ampliação limitada p/ não pixelar em células gigantes.
         local scale = layout.lcdScaleFor(base, availW, availH, text)
+        -- Pulso sutil quando finished (reforço visual além do blink)
+        if t.state == "finished" and visible then
+            local pulse = 1 + 0.025 * math.sin((t.animT or 0) * 6)
+            scale = scale * pulse
+        end
         love.graphics.setFont(base)
         local function drawScaled(str)
             local tw, th = base:getWidth(str) * scale, base:getHeight() * scale

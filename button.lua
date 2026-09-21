@@ -106,6 +106,7 @@ function Button:draw()
 
     love.graphics.setColor(theme.colors.btnText)
     love.graphics.setFont(self.font)
+    pcall(function() love.graphics.setLineJoin("bevel") end)
     if self.icon == "reset" then
         -- Ícone vetorial de reset (arco + ponta de seta), sem glifo Unicode.
         local cx, cy = self.x + self.w / 2, self.y + yOff + self.h / 2

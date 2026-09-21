@@ -31,8 +31,19 @@ Ordem: base técnica primeiro (evita retrabalho), depois UI de alto impacto, ref
 
 ## Parte 2 — backlog pós-1.0.4 (fonte: rodadas de revisão web, 2026-09-19)
 
-- [ ] Touch mobile: `love.touchpressed/released` (hoje só mouse/teclado); alvos ≥44px; testar em celular real
-- [ ] Áudio web: confirmar bipe no primeiro término no site (autoplay policy; Space de início conta como gesto na maioria dos browsers)
-- [ ] Decisão harness web: manter 2dengine/love.js no `gh-pages` ou migrar p/ Davidobot (`web/index.html` tem botão Iniciar que resolve autoplay) — ver README "Web/publicação"
+- [ ] Touch mobile: `love.touchpressed/released` (hoje só mouse/teclado); alvos ≥44px; testar em celular real — **LEMBRETE Fase B (adiado a pedido, fazer depois)**
+- [x] Áudio web: confirmar bipe no primeiro término no site (autoplay policy; Space de início conta como gesto) — mantido som `notification.lua:makeBeep` + harness 2dengine
+- [x] Decisão harness web: manter 2dengine/love.js no `gh-pages` — ver README "Web/publicação"
 - [x] `og:image` dedicado (`web/og-image.png` 1200×630 + publicado no `gh-pages`)
-- [ ] PWA/manifest (ícone, tema, offline além do cache love.js)
+- [ ] PWA/manifest (ícone, tema, offline além do cache love.js) — backlog, não priorizar agora
+
+## Parte 3 — Fase A validação HiDPI (em andamento, prioridade atual)
+- [x] `main.lua:190` `highdpi=true` + `love.graphics.getDimensions` pontos lógicos, `love.window.getDPIScale()` documentado
+- [x] `theme.lua:102` `setFilter nearest/linear` + fallback log, `web/index.html:71` `fixCanvasDPR()` para `devicePixelRatio`
+- [x] `main.lua:304` debounce `love.resize` 30ms + `store.lua:138` fullscreen persistente validado localmente
+- [ ] Validar nitidez real em 3 densidades: 1x desktop, 2x Retina, 2.5–3x Android — capturar screenshots `lcdDigitOn`/`lcdGhost` antes/depois (pendente teste visual manual)
+- [ ] Conferir `gh-pages` publicado: `style.css` `object-fit: contain !important` OK (verificado), `game.love` precisa rebuild e push após `highdpi` para surtir efeito no site (harness 2dengine não expõe flag `highdpi` no `player.js`; depende do `love.window.setMode` do bundle)
+
+## Parte 4 — Lembrete Fase B (próximo ciclo)
+- [ ] Implementar `love.touchpressed/touchreleased` em `main.lua:395` (mapear para `Controls.cellAt` + `Button:contains`, alvos ≥44px, `layout.lua:14`)
+- [ ] Testar em celular real (portrait/ultrawide) responsividade já coberta por `tests/test_layout.lua`

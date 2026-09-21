@@ -46,11 +46,23 @@ function Notification:_playOnce()
 end
 
 -- Chamada 1x por término (via onFinished). Retorna true se notificou.
+local function announceWeb(msg)
+    -- Web: atualiza aria-live via JS se disponível (love.js/Emscripten)
+    pcall(function()
+        if _G and _G.JS and _G.JS.eval then _G.JS.eval("if(document.getElementById('live'))document.getElementById('live').textContent="..string.format("%q", msg)) end
+        -- fallback: tenta via love.system (alguns harnesses expõem window)
+    end)
+    -- Também tenta via raw JS global (quando Lua roda com js ffi)
+    pcall(function() if rawget(_G,"window") then end end)
+end
+
 function Notification:notify(timer)
     if self.mode == "off" then return false end
     self:dismiss()
     self.flashing = true
     self.titleFlashT = 0
+    local label = timer and timer.label or "Timer"
+    announceWeb(label .. " finalizado: 00:00")
     if self.mode == "beep" then
         self:_playOnce()
     elseif self.mode == "repeat3" then

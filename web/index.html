@@ -32,7 +32,7 @@
          font-family: system-ui, sans-serif; }
   #wrap { position: relative; width: min(96vw, 900px); }
   canvas { width: 100%; display: block; border-radius: 12px;
-           background: #4d614d; }
+           background: #4d614d; image-rendering: -webkit-optimize-contrast; }
   #overlay { position: absolute; inset: 0; display: flex; flex-direction: column;
              align-items: center; justify-content: center; gap: 12px;
              color: #595b54; text-align: center; padding: 24px; }
@@ -46,6 +46,7 @@
 <body>
 <div id="wrap">
   <canvas id="canvas" width="900" height="700" role="img" aria-label="Multi Timer estilo japonês: até 3 timers de contagem regressiva"></canvas>
+  <div id="live" aria-live="polite" aria-atomic="true" style="position:absolute;left:-9999px;top:auto;width:1px;height:1px;overflow:hidden;"></div>
   <noscript><div style="text-align:center;font-family:system-ui,sans-serif;padding:16px">Este timer precisa de JavaScript habilitado para funcionar.</div></noscript>
   <div id="overlay">
     <div id="status">Carregando timer…</div>
@@ -67,6 +68,19 @@
     startBtn.hidden = true;
   }
 
+  // HiDPI: ajusta backing store do canvas ao devicePixelRatio antes de iniciar
+  function fixCanvasDPR() {
+    var canvas = document.getElementById("canvas");
+    var dpr = window.devicePixelRatio || 1;
+    var rect = canvas.getBoundingClientRect();
+    // Mantém CSS em 100% (via #wrap), mas buffer em DPR para nitidez Retina
+    // O harness love.js respeita width/height do canvas como framebuffer.
+    if (rect.width > 0) {
+      canvas.width = Math.round(rect.width * dpr);
+      canvas.height = Math.round(rect.height * dpr);
+    }
+  }
+
   // love.js expõe `love` global após carregar love.js; o jogo inicia no
   // primeiro gesto do usuário (necessário p/ desbloquear áudio no navegador).
   function boot() {
@@ -74,14 +88,32 @@
       fail("love.js não encontrado. Gere o bundle web a partir do .love.");
       return;
     }
+    fixCanvasDPR();
     statusEl.textContent = "Pronto.";
     startBtn.hidden = false;
     startBtn.addEventListener("click", function () {
       overlay.hidden = true;
+      fixCanvasDPR();
       try { love.run(GAME_FILE, "#canvas"); }
       catch (e) { overlay.hidden = false; fail(String(e)); }
     }, { once: true });
   }
+
+  // Acessibilidade: observa mudança de título (⏰ TEMPO!) e anuncia em aria-live
+  (function(){
+    var live = document.getElementById("live");
+    var lastTitle = document.title;
+    setInterval(function(){
+      if (document.title !== lastTitle) {
+        lastTitle = document.title;
+        if (lastTitle.indexOf("TEMPO") !== -1 && live) {
+          live.textContent = "Timer finalizado: " + lastTitle;
+        }
+      }
+      // Também detecta fixCanvasDPR em resize
+      if (window.devicePixelRatio) fixCanvasDPR();
+    }, 500);
+  })();
 
   window.addEventListener("load", boot);
   // Some com o overlay automaticamente se o jogo já estiver rodando

@@ -4,6 +4,19 @@ Todas as mudanças notáveis do projeto serão documentadas aqui.
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
+### Added
+- `timeutil.lua` — fonte única `TimeUtil.now()` (elimina duplicação `love.timer.getTime or os.clock` em `main.lua:95,208`).
+- Persistência fullscreen: `Store.collect/apply` + `config` agora salvam `fullscreen:boolean` (`main.lua:135` `toggleFullscreen` + `love.load` restaura).
+- `web/index.html` `fixCanvasDPR()` (buffer `devicePixelRatio`) + `aria-live` `#live` para leitor de tela (poll `document.title` com `TEMPO`).
+- `README.md` seção `Teclado (PT-BR)` espelhando atalhos em português.
+### Fixed
+- `main.lua:190` `highdpi=true` + `getDimensions` pontos lógicos, `love.resize` debounce 30ms (evita jank em drag).
+- `theme.lua:102` `setFilter nearest` (LCD) / `linear` (UI) + log fallback fonte; `store.lua` `pcall` em save/load + versionamento `Store.VERSION=1` com sanitização `presets/sound/theme`.
+- `ui/timer_view.lua:13` lerp `lcdBg` (~150ms) + scale pop `0.96→1` ao trocar `1↔2↔3`, sombra case + gradiente LCD + pulso `finished`, `button.lua:107` `setLineJoin bevel`.
+- `ui/timer_view.lua:37` bug `theme` global `nil` em `new()` corrigido (fonte só em `refresh()` após `theme.load`).
+
+### Changed
+- `docs/todo.md` Fase A (validação HiDPI) executada, Fase B (touch mobile) como lembrete adiado a pedido.
 
 ## [1.0.4] - 2026-09-19
 ### Fixed

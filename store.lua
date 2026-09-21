@@ -61,12 +61,18 @@ function Store.clear(filename)
     return true
 end
 
+Store.VERSION = 1
+
 -- Aplica estado carregado aos timers; nowFn = tempo monotônico atual
 -- (love.timer.getTime, p/ reconstruir endTime intra-sessão),
 -- nowWallFn = relógio de parede atual (os.time, p/ descontar tempo real).
 -- Retorna {mode, focusIndex} para o app aplicar.
 function Store.apply(data, timers, nowFn, maxTimers, nowWallFn)
     if type(data) ~= "table" then return nil end
+    -- Versionamento: ignora graciosamente schemas futuros incompatíveis
+    if data.version and tonumber(data.version) and tonumber(data.version) > Store.VERSION then
+        return nil
+    end
     nowFn = nowFn or os.clock
     nowWallFn = nowWallFn or os.time
     maxTimers = maxTimers or 3
@@ -103,7 +109,27 @@ function Store.apply(data, timers, nowFn, maxTimers, nowWallFn)
             end
         end
     end
-    return { mode = data.mode, focusIndex = data.focusIndex, presets = data.presets, sound = data.sound, theme = data.theme }
+    -- Validação defensiva: sanitiza presets/sound/theme
+    local presets = nil
+    if type(data.presets) == "table" then
+        presets = {}
+        for i = 1, 3 do
+            local v = tonumber(data.presets[i])
+            if v and v >= 1 and v <= 99 then presets[i] = math.floor(v) end
+        end
+        if #presets == 0 then presets = nil end
+    end
+    local sound = nil
+    if type(data.sound) == "string" and ({off=true, beep=true, repeat3=true, ["repeat"]=true})[data.sound] then
+        sound = data.sound
+    end
+    local theme = nil
+    if type(data.theme) == "string" and ({classic=true, dark=true, contrast=true})[data.theme] then
+        theme = data.theme
+    end
+    local fullscreen = nil
+    if type(data.fullscreen) == "boolean" then fullscreen = data.fullscreen end
+    return { mode = data.mode, focusIndex = data.focusIndex, presets = presets, sound = sound, theme = theme, fullscreen = fullscreen }
 end
 
 -- Coleta estado atual para salvar. opts.now = tempo monotônico atual
@@ -111,8 +137,8 @@ end
 -- (para endTimestampWall; padrão os.time()).
 function Store.collect(timers, opts)
     opts = opts or {}
-    local out = { timers = {}, mode = opts.mode or 1, focusIndex = opts.focusIndex or 1,
-        presets = opts.presets, sound = opts.sound, theme = opts.theme }
+    local out = { version = Store.VERSION, timers = {}, mode = opts.mode or 1, focusIndex = opts.focusIndex or 1,
+        presets = opts.presets, sound = opts.sound, theme = opts.theme, fullscreen = opts.fullscreen }
     local nowWall = opts.nowWall or os.time()
     for i, t in ipairs(timers) do
         local entry = { remaining = t.remaining, duration = t.duration,
